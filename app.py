@@ -31,6 +31,7 @@ class StringModel(BaseModel):
 @app.post("/navigation")
 async def navigate(content: StringModel):
     print(content)
+    print(content.data)
     content_dict = content.model_dump()
     print(content_dict)
     # control.navigation(content_dict)
@@ -38,25 +39,26 @@ async def navigate(content: StringModel):
 
 @app.get("/status")
 async def get_status():
-#    return {robot.data_status}
     return control.status()
 
 @app.post("/conveyor")
 async def control_conveyor(content: StringModel):
-    print(content.data)
-    # control.control_conveyor(content.data)
+    # print(content.data)
+    control.control_conveyor(content.data)
     return {"message": "Robot đã nhận lệnh điều khiển conveyor"}
+
+@app.get("/conveyor")
+async def status_conveyor(type: str):
+    control.check_conveyor(type)
+    return {"message": "Robot đã kiểm tra trạng thái conveyor"}
 
 @app.post("/stopper")
 async def control_stopper(content: StringModel):
-    print(content.data)
-    # control.control_stopper(content.data)
+    # print(content.data)
+    control.control_stopper(content.data)
     return {"message": "Robot đã nhận lệnh điều khiển stopper"}
 
 @app.get("/checklocation")
 async def check_location(content: StringModel):
-    print(content)
-    # robot.check_robot_location(content.data)
-
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=5000, log_level="debug")
+    print(content.data)
+    return robot.check_robot_location(content.data)

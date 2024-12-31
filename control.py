@@ -83,6 +83,16 @@ class RobotAPI:
         else:
             self.message = "Hành động băng tải không hợp lệ"
 
+    def check_conveyor(self, type: str):
+        if type == 'cw':
+            print("CW")
+            return self.server_modbus.datablock_holding_register.getValues(address=0x04, count=1)[0] == Dir.cw_out
+        elif type == 'ccw':
+            print("CCW")
+            return self.server_modbus.datablock_holding_register.getValues(address=0x04, count=1)[0] == Dir.ccw_out
+        print("Truyền sai hành động!!!")
+        return False
+        
     def control_stopper(self, status:str):
         if status == "open":
             self.server_modbus.datablock_input_register.setValues(address=0x04,values=[Stopper.all_on])

@@ -1,6 +1,6 @@
 from socket import socket
 from frame import tranmit
-from api import navigation, status
+from api import navigation, status, control
 from modbus_server import ModbusServer
 
 import logging
@@ -27,14 +27,15 @@ class Stopper:
     all_off = 5
     all_on = 6
 
+modbus = ModbusServer()
+
 class RobotAPI:
     def __init__(self, host:str):
         self.host = host
         self.api_robot_navigation = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         self.api_robot_status = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-        self.server_modbus = ModbusServer()
+        self.api_robot_control = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 
-        self.data_status = {}
         self.keys = {
             "keys":["confidence","DI","DO","current_station","charging","last_station","vx","vy","blocked","block_reason","battery_level","task_status","target_id","emergency","reloc_status","fatals","errors","warnings","notices","current_ip",'x','y','fork_height','area_ids', "angle", "target_dist", "path", "unfinished_path"],
             "return_laser":False,
@@ -52,6 +53,8 @@ class RobotAPI:
         self.api_robot_status.connect((self.host,19204))
         self.api_robot_navigation.settimeout(10)
         self.api_robot_navigation.connect((self.host,19206))
+        self.api_robot_control.settimeout(10)
+        self.api_robot_control.connect((self.host,19205))
 
     def connect_status(self):
         self.api_robot_status.settimeout(10)
@@ -61,24 +64,42 @@ class RobotAPI:
         self.api_robot_navigation.settimeout(10)
         self.api_robot_navigation.connect((self.host,19206))
 
+    def connect_control(self):
+        self.api_robot_control.settimeout(10)
+        self.api_robot_control.connect((self.host,19205))
+
     def navigation(self,json_string:dict):
         result = tranmit.sendAPI(self.api_robot_navigation, navigation.robot_task_go_target_req, json_string)
-        logging.info("Result's navigation: " + result)
+        logging.info("Result's navigation: " + str(result))
+
+    def nav_cancel(self):
+        return tranmit.sendAPI(self.api_robot_navigation, navigation.robot_task_cancel_req, {})
+    
+    def nav_pause(self):
+        return tranmit.sendAPI(self.api_robot_navigation, navigation.robot_task_pause_req, {})
+    
+    def nav_resume(self):
+        return tranmit.sendAPI(self.api_robot_navigation, navigation.robot_task_resume_req, {})
 
     def status(self):
         result = tranmit.sendAPI(self.api_robot_status, status.robot_status_all1_req, self.keys)
-        logging.info("Result's status: " + result)
-        # self.data_status = result
+        return result
+    
+    def relocation(self, data_position:True):
+        return tranmit.sendAPI(self.api_robot_control, control.robot_control_reloc_req, data_position)
+    
+    def confirm_local(self):
+        return tranmit.sendAPI(self.api_robot_control,control.robot_control_comfirmloc_req,{})
 
     def control_conveyor(self, type:str):
         if type == 'stop':
-            self.server_modbus.datablock_input_register.setValues(address=0x05,values=[Dir.stop])
+            modbus.datablock_input_register.setValues(address=0x05,values=Dir.stop)
             self.message = "Dừng băng tải"
         elif type == 'cw':
-            self.server_modbus.datablock_input_register.setValues(address=0x05, values=[Dir.cw_out])
+            modbus.datablock_input_register.setValues(address=0x05, values=Dir.cw_out)
             self.message = "Quay băng tải"
         elif type == 'ccw':
-            self.server_modbus.datablock_input_register.setValues(address=0x05, values=[Dir.ccw_out])
+            modbus.datablock_input_register.setValues(address=0x05, values=Dir.ccw_out)
             self.message = "Quay băng tải"
         else:
             self.message = "Hành động băng tải không hợp lệ"
@@ -86,19 +107,39 @@ class RobotAPI:
     def check_conveyor(self, type: str):
         if type == 'cw':
             print("CW")
-            return self.server_modbus.datablock_holding_register.getValues(address=0x04, count=1)[0] == Dir.cw_out
+            return modbus.datablock_holding_register.getValues(address=0x04, count=1)[0] == Dir.cw_out
         elif type == 'ccw':
             print("CCW")
-            return self.server_modbus.datablock_holding_register.getValues(address=0x04, count=1)[0] == Dir.ccw_out
+            return modbus.datablock_holding_register.getValues(address=0x04, count=1)[0] == Dir.ccw_out
         print("Truyền sai hành động!!!")
         return False
         
     def control_stopper(self, status:str):
         if status == "open":
-            self.server_modbus.datablock_input_register.setValues(address=0x04,values=[Stopper.all_on])
+            modbus.datablock_input_register.setValues(address=0x04,values=Stopper.all_on)
+            print("Mở tất cả Stopper")
             self.message = "Mở tất cả Stopper"
         elif status == "close":
-            self.server_modbus.datablock_input_register.setValues(address=0x04, values=[Stopper.all_off])
+            modbus.datablock_input_register.setValues(address=0x04, values=Stopper.all_off)
+            print("Đóng tất cả Stopper")
             self.message = "Đóng tất cả Stopper"
         else:
+            print("Hành động không hợp lệ")
             self.message = "Hành động không hợp lệ"
+    def control_lift(self, height:int):
+        if not isinstance(height, int) or not (0 <= height <= 700):
+            return
+        modbus.datablock_input_register.setValues(address=0x03, values=[height])
+
+    def status_test(self):
+        return {"current_location": "LM7082"}
+
+    def check_location(self, location: str):
+        # data_status = self.status()
+        data_status = self.status_test()
+        if data_status["current_location"] == location:
+            print(f"Robot đã tới điểm {location}")
+            return True
+        else:
+            print(f"Robot chưa tới điểm {location}")
+        return False

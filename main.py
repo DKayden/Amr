@@ -1,14 +1,15 @@
-from robot import Robot
 from threading import Thread
-from control import RobotAPI
-from config import HOST_ROBOT, APP_HOST, APP_PORT
+from control import RobotAPI, modbus
+from config import APP_HOST, APP_PORT
 import uvicorn
-from app import app
+from app import app, control
+import asyncio
 
-
-robot_api = RobotAPI(HOST_ROBOT)
+def run_app():
+    uvicorn.run(app, host=APP_HOST, port=APP_PORT, log_level="debug")
 
 if __name__ == '__main__':
-    # robot_api.connect_all()
+    # control.connect_all()
+    # asyncio.run(modbus.run_server_serial())
+    Thread(target=run_app()).start()
 
-    uvicorn.run(app, host=APP_HOST, port=APP_PORT, log_level="debug")

@@ -72,3 +72,7 @@ async def check_location(content: dict):
 @app.post("/lift")
 def lift(contetnt: dict):
     return control.control_lift(contetnt["height"])
+
+@app.post("/color")
+def color(content: dict):
+    return control.set_led(content["color"])

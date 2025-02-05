@@ -85,6 +85,7 @@ class RobotAPI:
     def status(self):
         result = tranmit.sendAPI(self.api_robot_status, status.robot_status_all1_req, self.keys)
         logging.info("Result's status: " + str(result))
+        self.data_status = result
         return result
     
     def confirm_local(self):
@@ -141,3 +142,13 @@ class RobotAPI:
         if (data["current_station"]) == location:
             return True
         return False
+    
+    def set_led(self, color:str):
+        if color == "red":
+            modbus.datablock_input_register.setValues(1, Color.red)
+        elif color == "yellow":
+            modbus.datablock_input_register.setValues(1, Color.yellow)
+        elif color == "green":
+            modbus.datablock_input_register.setValues(1, Color.green)
+        else:
+            print("Color error")

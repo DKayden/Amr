@@ -5,6 +5,7 @@ from modbus_server import ModbusServer
 
 import logging
 import socket
+import time
 
 class Color:
     red = 8
@@ -83,10 +84,15 @@ class RobotAPI:
         return tranmit.sendAPI(self.api_robot_navigation, navigation.robot_task_resume_req,{})
 
     def status(self):
-        result = tranmit.sendAPI(self.api_robot_status, status.robot_status_all1_req, self.keys)
-        logging.info("Result's status: " + str(result))
-        self.data_status = result
-        return result
+        while True:
+            try:
+                result = tranmit.sendAPI(self.api_robot_status, status.robot_status_all1_req, self.keys)
+                logging.info("Result's status: " + str(result))
+                self.data_status = result
+            except Exception as e:
+                logging.error(str(e))
+            time.sleep(1)
+            # return result
     
     def confirm_local(self):
         return tranmit.sendAPI(self.api_robot_control, control.robot_control_comfirmloc_req,{})
@@ -138,8 +144,7 @@ class RobotAPI:
             return ({'result':False})
         
     def check_robot_location(self, location:str):
-        data = self.status()
-        if (data["current_station"]) == location:
+        if (self.data_status["current_station"]) == location:
             return True
         return False
     

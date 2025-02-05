@@ -11,5 +11,6 @@ def run_app():
 
 if __name__ == '__main__':
     control.connect_all()
-    task_magazine_request = Thread(target=run_app,args=()).start()
+    Thread(target=run_app,args=()).start()
+    Thread(target=control.status(), args=()).start()
     asyncio.run(modbus.run_server_serial())

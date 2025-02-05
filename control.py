@@ -135,3 +135,9 @@ class RobotAPI:
             return ({'result':True})
         except Exception as E:
             return ({'result':False})
+        
+    def check_robot_location(self, location:str):
+        data = self.status()
+        if (data["current_station"]) == location:
+            return True
+        return False

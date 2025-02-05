@@ -4,10 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from control import RobotAPI
 from config import HOST_ROBOT
-from robot import Robot
 
 control = RobotAPI(HOST_ROBOT)
-robot = Robot()
 
 app = FastAPI(
     title="AMR API",
@@ -69,7 +67,7 @@ async def control_stopper(content: dict):
 
 @app.get("/checklocation")
 async def check_location(content: dict):
-    return robot.check_robot_location(content['location'])
+    return control.check_robot_location(content['location'])
 
 @app.post("/lift")
 def lift(contetnt: dict):

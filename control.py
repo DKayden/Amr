@@ -36,6 +36,7 @@ class RobotAPI:
         self.api_robot_status = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         self.api_robot_control = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 
+        self.data_status = {}
         self.keys = {
             "keys":["confidence","DI","DO","current_station","charging","last_station","vx","vy","blocked","block_reason","battery_level","task_status","target_id","emergency","reloc_status","fatals","errors","warnings","notices","current_ip",'x','y','fork_height','area_ids', "angle", "target_dist", "path", "unfinished_path"],
             "return_laser":False,
@@ -70,36 +71,40 @@ class RobotAPI:
 
     def navigation(self,json_string:dict):
         result = tranmit.sendAPI(self.api_robot_navigation, navigation.robot_task_go_target_req, json_string)
-        logging.info("Result's navigation: " + str(result))
+        logging.info("Result's navigation: "  + str(result))
 
     def nav_cancel(self):
-        return tranmit.sendAPI(self.api_robot_navigation, navigation.robot_task_cancel_req, {})
+        return tranmit.sendAPI(self.api_robot_navigation, navigation.robot_task_cancel_req,{})
     
     def nav_pause(self):
-        return tranmit.sendAPI(self.api_robot_navigation, navigation.robot_task_pause_req, {})
+        return tranmit.sendAPI(self.api_robot_navigation, navigation.robot_task_pause_req,{})
     
     def nav_resume(self):
-        return tranmit.sendAPI(self.api_robot_navigation, navigation.robot_task_resume_req, {})
+        return tranmit.sendAPI(self.api_robot_navigation, navigation.robot_task_resume_req,{})
 
     def status(self):
         result = tranmit.sendAPI(self.api_robot_status, status.robot_status_all1_req, self.keys)
+        logging.info("Result's status: " + str(result))
         return result
     
-    def relocation(self, data_position:True):
-        return tranmit.sendAPI(self.api_robot_control, control.robot_control_reloc_req, data_position)
-    
     def confirm_local(self):
-        return tranmit.sendAPI(self.api_robot_control,control.robot_control_comfirmloc_req,{})
+        return tranmit.sendAPI(self.api_robot_control, control.robot_control_comfirmloc_req,{})
+    
+    def relocation(self, data_position:True):
+        return tranmit.sendAPI(self.api_robot_control, control.robot_control_reloc_req,data_position)
 
     def control_conveyor(self, type:str):
         if type == 'stop':
             modbus.datablock_input_register.setValues(address=0x05,values=Dir.stop)
+            print("STOP")
             self.message = "Dừng băng tải"
         elif type == 'cw':
             modbus.datablock_input_register.setValues(address=0x05, values=Dir.cw_out)
+            print("CW")
             self.message = "Quay băng tải"
         elif type == 'ccw':
             modbus.datablock_input_register.setValues(address=0x05, values=Dir.ccw_out)
+            print("CCW")
             self.message = "Quay băng tải"
         else:
             self.message = "Hành động băng tải không hợp lệ"
@@ -116,30 +121,17 @@ class RobotAPI:
         
     def control_stopper(self, status:str):
         if status == "open":
-            modbus.datablock_input_register.setValues(address=0x04,values=Stopper.all_on)
-            print("Mở tất cả Stopper")
+            modbus.datablock_input_register.setValues(address=0x04,values=[Stopper.all_on])
             self.message = "Mở tất cả Stopper"
         elif status == "close":
-            modbus.datablock_input_register.setValues(address=0x04, values=Stopper.all_off)
-            print("Đóng tất cả Stopper")
+            modbus.datablock_input_register.setValues(address=0x04, values=[Stopper.all_off])
             self.message = "Đóng tất cả Stopper"
         else:
-            print("Hành động không hợp lệ")
             self.message = "Hành động không hợp lệ"
+
     def control_lift(self, height:int):
-        if not isinstance(height, int) or not (0 <= height <= 700):
-            return
-        modbus.datablock_input_register.setValues(address=0x03, values=[height])
-
-    def status_test(self):
-        return {"current_location": "LM7082"}
-
-    def check_location(self, location: str):
-        # data_status = self.status()
-        data_status = self.status_test()
-        if data_status["current_location"] == location:
-            print(f"Robot đã tới điểm {location}")
-            return True
-        else:
-            print(f"Robot chưa tới điểm {location}")
-        return False
+        try:
+            modbus.datablock_input_register.setValues(address=0x03,values=[height])
+            return ({'result':True})
+        except Exception as E:
+            return ({'result':False})

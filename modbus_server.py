@@ -24,6 +24,7 @@ class ModbusServer():
         print("run modbus server")
         server = await StartAsyncSerialServer(
             context=self.context_serial,  # Data storage
+            # identity=self.identity,  # server identify
             # timeout=1,  # waiting time for request to complete
             port='/dev/ttyUSB0',  # serial port
             # custom_functions=[],  # allow custom handling

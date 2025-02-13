@@ -62,7 +62,7 @@ async def status_conveyor(type: str):
 
 @app.post("/stopper")
 async def control_stopper(content: dict):
-    control.control_stopper(content["data"])
+    control.control_stopper(content)
     return {"message": "Robot đã nhận lệnh điều khiển stopper"}
 
 @app.get("/checklocation")
@@ -70,8 +70,8 @@ async def check_location(content: dict):
     return control.check_robot_location(content['location'])
 
 @app.post("/lift")
-def lift(contetnt: dict):
-    return control.control_lift(contetnt["height"])
+def lift(content: dict):
+    return control.control_lift(content["height"])
 
 @app.post("/color")
 def color(content: dict):

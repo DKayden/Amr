@@ -84,15 +84,14 @@ class RobotAPI:
         return tranmit.sendAPI(self.api_robot_navigation, navigation.robot_task_resume_req,{})
 
     def status(self):
-        while True:
-            try:
-                result = tranmit.sendAPI(self.api_robot_status, status.robot_status_all1_req, self.keys)
-                logging.info("Result's status: " + str(result))
-                self.data_status = result
-            except Exception as e:
-                logging.error(str(e))
-            time.sleep(1)
-            # return result
+        try:
+            result = tranmit.sendAPI(self.api_robot_status, status.robot_status_all1_req, self.keys)
+            logging.info("Result's status: " + str(result))
+            self.data_status = result
+        except Exception as e:
+            logging.error(str(e))
+        time.sleep(1)
+        return result
     
     def confirm_local(self):
         return tranmit.sendAPI(self.api_robot_control, control.robot_control_comfirmloc_req,{})
@@ -126,13 +125,23 @@ class RobotAPI:
         print("Truyền sai hành động!!!")
         return False
         
-    def control_stopper(self, status:str):
+    def control_stopper(self, data):
+        status = data['status']
+        action = data['action']
         if status == "open":
-            modbus.datablock_input_register.setValues(address=0x04,values=[Stopper.all_on])
-            self.message = "Mở tất cả Stopper"
+            if action == 'cw':
+                modbus.datablock_input_register.setValues(address=0x04,values=[Stopper.back_on])
+            elif action == 'ccw':
+                modbus.datablock_input_register.setValues(address=0x04,values=[Stopper.front_on])
+            elif action == 'all':
+                modbus.datablock_input_register.setValues(address=0x04,values=[Stopper.all_on])
         elif status == "close":
-            modbus.datablock_input_register.setValues(address=0x04, values=[Stopper.all_off])
-            self.message = "Đóng tất cả Stopper"
+            if action == 'cw':
+                modbus.datablock_input_register.setValues(address=0x04, values=[Stopper.back_off])
+            elif action == 'ccw':
+                modbus.datablock_input_register.setValues(address=0x04, values=[Stopper.front_off])
+            elif action == 'all':
+                modbus.datablock_input_register.setValues(address=0x04,values=[Stopper.all_off])
         else:
             self.message = "Hành động không hợp lệ"
 
@@ -144,7 +153,8 @@ class RobotAPI:
             return ({'result':False})
         
     def check_robot_location(self, location:str):
-        if (self.data_status["current_station"]) == location:
+        data_status = self.status()
+        if (data_status["current_station"]) == location:
             return True
         return False
     

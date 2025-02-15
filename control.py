@@ -128,20 +128,19 @@ class RobotAPI:
     def control_stopper(self, data):
         status = data['status']
         action = data['action']
-        if status == "open":
-            if action == 'cw':
-                modbus.datablock_input_register.setValues(address=0x04,values=[Stopper.back_on])
-            elif action == 'ccw':
-                modbus.datablock_input_register.setValues(address=0x04,values=[Stopper.front_on])
-            elif action == 'all':
-                modbus.datablock_input_register.setValues(address=0x04,values=[Stopper.all_on])
-        elif status == "close":
-            if action == 'cw':
-                modbus.datablock_input_register.setValues(address=0x04, values=[Stopper.back_off])
-            elif action == 'ccw':
-                modbus.datablock_input_register.setValues(address=0x04, values=[Stopper.front_off])
-            elif action == 'all':
-                modbus.datablock_input_register.setValues(address=0x04,values=[Stopper.all_off])
+
+        # Tạo mapping cho các hành động
+        stopper_actions = {
+            ('open', 'cw'): Stopper.back_on,
+            ('open', 'ccw') : Stopper.front_on,
+            ('open', 'all') : Stopper.all_on,
+            ('close', 'cw'): Stopper.back_off,
+            ('close', 'ccw') : Stopper.front_off,
+            ('close', 'all') : Stopper.all_off
+        }
+        action_value = stopper_actions.get((status, action))
+        if action_value is not None:
+            modbus.datablock_input_register.setValues(address=0x04, values=[action_value])
         else:
             self.message = "Hành động không hợp lệ"
 

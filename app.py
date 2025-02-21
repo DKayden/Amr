@@ -49,7 +49,11 @@ async def relocation(content: dict):
         return {"message" : "Gửi lệnh lấy lại vị trí cho robot thành công"}
     except Exception as e:
         return {"message" : f"Có lỗi xảy ra khi gửi lệnh lấy lại vị trí cho robot {e}"}
-
+    
+@app.post("/lift")
+def lift(content: dict):
+    return control.control_lift(content["height"])
+    
 @app.post("/conveyor")
 async def control_conveyor(content: dict):
     control.control_conveyor(content["data"])
@@ -57,8 +61,8 @@ async def control_conveyor(content: dict):
 
 @app.get("/conveyor")
 async def status_conveyor(type: str):
-    control.check_conveyor(type)
-    return {"message": "Robot đã kiểm tra trạng thái conveyor"}
+    result = control.check_conveyor(type)
+    return {"message": "Robot đã kiểm tra trạng thái conveyor", "result" : result}
 
 @app.post("/stopper")
 async def control_stopper(content: dict):
@@ -69,10 +73,14 @@ async def control_stopper(content: dict):
 async def check_location(content: dict):
     return control.check_robot_location(content['location'])
 
-@app.post("/lift")
-def lift(content: dict):
-    return control.control_lift(content["height"])
+@app.get("/lift")
+def check_height(height: int):
+    return control.check_conveyor_height(height)
 
 @app.post("/color")
 def color(content: dict):
     return control.set_led(content["color"])
+
+@app.get("/sensor")
+def sensor():
+    return control.check_sensor()

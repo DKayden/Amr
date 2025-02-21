@@ -119,9 +119,11 @@ class RobotAPI:
         if type == 'cw':
             print("CW")
             return modbus.datablock_holding_register.getValues(address=0x04, count=1)[0] == Dir.cw_out
+            # return modbus.datablock_input_register.getValues(address=0x05, count=1) == Dir.cw_out
         elif type == 'ccw':
             print("CCW")
             return modbus.datablock_holding_register.getValues(address=0x04, count=1)[0] == Dir.ccw_out
+            # return modbus.datablock_input_register.getValues(address=0x05, count=1) == Dir.ccw_out
         print("Truyền sai hành động!!!")
         return False
         
@@ -150,12 +152,18 @@ class RobotAPI:
             return ({'result':True})
         except Exception as E:
             return ({'result':False})
+
+    def check_conveyor_height(self, height:int):
+        return modbus.datablock_holding_register.getValues(address=0x02, count=1)[0] == height
         
     def check_robot_location(self, location:str):
         data_status = self.status()
         if (data_status["current_station"]) == location:
             return True
         return False
+    
+    def check_sensor(self):
+        return modbus.datablock_holding_register.getValues(address=0x0A, count=10)
     
     def set_led(self, color:str):
         if color == "red":

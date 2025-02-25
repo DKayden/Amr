@@ -69,6 +69,10 @@ async def control_stopper(content: dict):
     control.control_stopper(content)
     return {"message": "Robot đã nhận lệnh điều khiển stopper"}
 
+@app.get("/stopper")
+async def check_stopper(content: dict):
+    return control.check_stopper(content["status"], content["action"])
+
 @app.get("/checklocation")
 async def check_location(content: dict):
     return control.check_robot_location(content['location'])

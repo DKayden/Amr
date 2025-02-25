@@ -155,20 +155,18 @@ class RobotAPI:
     def control_conveyor(self, type: str):
         if type == "stop":
             modbus.datablock_input_register.setValues(address=0x05, values=Dir.stop)
-            print("STOP")
             self.message = "Dừng băng tải"
         elif type == "cw":
             modbus.datablock_input_register.setValues(address=0x05, values=Dir.cw_out)
-            print("CW")
             self.message = "Quay băng tải"
         elif type == "ccw":
             modbus.datablock_input_register.setValues(address=0x05, values=Dir.ccw_out)
-            print("CCW")
             self.message = "Quay băng tải"
         else:
             self.message = "Hành động băng tải không hợp lệ"
 
     def check_conveyor(self, type: str):
+        print(f"Data modbus: {modbus.datablock_holding_register.getValues(address=0x04, count=1)[0]}")
         if type == "cw":
             return (
                 modbus.datablock_holding_register.getValues(address=0x04, count=1)[0]
@@ -178,6 +176,11 @@ class RobotAPI:
             return (
                 modbus.datablock_holding_register.getValues(address=0x04, count=1)[0]
                 == Dir.ccw_out
+            )
+        elif type == "stop":
+            return (
+                modbus.datablock_holding_register.getValues(address=0x04, count=1)[0]
+                == Dir.stop
             )
         print("Truyền sai hành động!!!")
         return False
@@ -198,7 +201,7 @@ class RobotAPI:
         action_value = self.stopper_actions.get((status, action))
         if action_value is not None:
             return (
-                modbus.datablock_holding_register.getValues(address=0x03, count=1)
+                modbus.datablock_holding_register.getValues(address=0x03, count=1)[0]
                 == action_value
             )
 

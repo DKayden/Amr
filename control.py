@@ -166,7 +166,9 @@ class RobotAPI:
             self.message = "Hành động băng tải không hợp lệ"
 
     def check_conveyor(self, type: str):
-        print(f"Data modbus: {modbus.datablock_holding_register.getValues(address=0x04, count=1)[0]}")
+        print(
+            f"Data modbus: {modbus.datablock_holding_register.getValues(address=0x04, count=1)[0]}"
+        )
         if type == "cw":
             return (
                 modbus.datablock_holding_register.getValues(address=0x04, count=1)[0]
@@ -236,3 +238,8 @@ class RobotAPI:
             modbus.datablock_input_register.setValues(1, Color.green)
         else:
             print("Color error")
+
+    def monitor(self, data: dict):
+        return tranmit.sendAPI(
+            self.api_robot_control, control.robot_control_motion_req, data
+        )

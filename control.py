@@ -219,8 +219,9 @@ class RobotAPI:
 
     def check_robot_location(self, location: str):
         data_status = self.status()
-        if (data_status["current_station"]) == location:
-            return True
+        if data_status["task_status"] == 4:
+            if (data_status["current_station"]) == location:
+                return True
         return False
 
     def check_sensor(self):

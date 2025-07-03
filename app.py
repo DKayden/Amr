@@ -39,16 +39,21 @@ async def navigate_action(type: str):
     return {"message": f"Robot đã nhận lệnh {type} di chuyển"}
 
 @app.get("/status")
-async def get_status():
-    return control.status()
+def get_status():
+    return control.data_status
 
-@app.post("relocation")
+@app.post("/relocation")
 async def relocation(content: dict):
     try:
         control.relocation(content['data'])
         return {"message" : "Gửi lệnh lấy lại vị trí cho robot thành công"}
     except Exception as e:
         return {"message" : f"Có lỗi xảy ra khi gửi lệnh lấy lại vị trí cho robot {e}"}
+    
+@app.post("/confirm")
+async def confirm():
+    control.confirm_local()
+    return {"message" : "Gửi lệnh xác nhận vị trí cho robot thành công"}
     
 @app.post("/lift")
 def lift(content: dict):

@@ -131,16 +131,25 @@ class RobotAPI:
         )
 
     def status(self):
-        try:
-            result = tranmit.sendAPI(
-                self.api_robot_status, status.robot_status_all1_req, self.keys
-            )
-            logging.info("Result's status: " + str(result))
-            self.data_status = result
-        except Exception as e:
-            logging.error(str(e))
-        time.sleep(1)
-        return result
+        self.data_status = tranmit.sendAPI(
+            self.api_robot_status, status.robot_status_all1_req, self.keys
+        )
+        if self.data_status:
+            if self.data_status["blocked"] or self.data_status["emergency"]:
+                self.set_led("red")
+            elif (
+                self.data_status["current_station"] == "LM101"
+                or self.data_status["battery_level"] < 0.2
+            ):
+                self.set_led("yellow")
+            else:
+                self.set_led("green")
+        sensor = self.check_sensor()
+        data_sensor = [
+            sensor[5],sensor[6]
+        ]
+        self.data_status["sensor"] = data_sensor
+
 
     def confirm_local(self):
         return tranmit.sendAPI(
@@ -218,9 +227,8 @@ class RobotAPI:
         )
 
     def check_robot_location(self, location: str):
-        data_status = self.status()
-        if data_status["task_status"] == 4:
-            if (data_status["current_station"]) == location:
+        if self.data_status["task_status"] == 4:
+            if (self.data_status["current_station"]) == location:
                 return True
         return False
 

@@ -5,7 +5,6 @@ from modbus_server import ModbusServer
 
 import logging
 import socket
-import time
 
 
 class Color:
@@ -42,7 +41,7 @@ class RobotAPI:
         self.api_robot_status = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.api_robot_control = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-        self.data_status = {}
+        self.data_status = None
         self.keys = {
             "keys": [
                 "confidence",
@@ -77,8 +76,6 @@ class RobotAPI:
             "return_laser": False,
             "return_beams3D": False,
         }
-        self.mode = "auto"
-        self.message = ""
         self.conveyor = {"type": Dir.stop, "height": 0.00}
         self.stopper_actions = {
             ("open", "cw"): Stopper.back_on,
@@ -134,22 +131,6 @@ class RobotAPI:
         self.data_status = tranmit.sendAPI(
             self.api_robot_status, status.robot_status_all1_req, self.keys
         )
-        if self.data_status:
-            if self.data_status["blocked"] or self.data_status["emergency"]:
-                self.set_led("red")
-            elif (
-                self.data_status["current_station"] == "LM101"
-                or self.data_status["battery_level"] < 0.2
-            ):
-                self.set_led("yellow")
-            else:
-                self.set_led("green")
-        sensor = self.check_sensor()
-        data_sensor = [
-            sensor[5],sensor[6]
-        ]
-        self.data_status["sensor"] = data_sensor
-
 
     def confirm_local(self):
         return tranmit.sendAPI(
@@ -164,15 +145,12 @@ class RobotAPI:
     def control_conveyor(self, type: str):
         if type == "stop":
             modbus.datablock_input_register.setValues(address=0x05, values=Dir.stop)
-            self.message = "Dừng băng tải"
         elif type == "cw":
             modbus.datablock_input_register.setValues(address=0x05, values=Dir.cw_out)
-            self.message = "Quay băng tải"
         elif type == "ccw":
             modbus.datablock_input_register.setValues(address=0x05, values=Dir.ccw_out)
-            self.message = "Quay băng tải"
         else:
-            self.message = "Hành động băng tải không hợp lệ"
+            pass
 
     def check_conveyor(self, type: str):
         if type == "cw":
@@ -195,15 +173,20 @@ class RobotAPI:
 
     def control_stopper(self, data):
         status = data["status"]
-        action = data["action"]
 
-        action_value = self.stopper_actions.get((status, action))
+        if status == "true":
+            action_value = Stopper.all_on
+        elif status == "false":
+            action_value = Stopper.all_off
+        else:
+            action = data["action"]
+            action_value = self.stopper_actions.get((status, action))
         if action_value is not None:
             modbus.datablock_input_register.setValues(
                 address=0x04, values=[action_value]
             )
         else:
-            self.message = "Hành động không hợp lệ"
+            pass
 
     def check_stopper(self, status, action):
         action_value = self.stopper_actions.get((status, action))
@@ -249,3 +232,11 @@ class RobotAPI:
         return tranmit.sendAPI(
             self.api_robot_control, control.robot_control_motion_req, data
         )
+
+    def change_emergency(self, status):
+        if status == "true":
+            self.data_status["emergency"] = True
+            return {"result": True, "status": status}
+        elif status == "false":
+            self.data_status["emergency"] = False
+            return {"result": False, "status": status}
